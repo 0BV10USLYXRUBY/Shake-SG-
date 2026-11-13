@@ -1,0 +1,89 @@
+-- Micro-Shake Speed Glitch Script (Square Button | Text: SG shake)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local speedEnabled = false
+local normalSpeed = 16
+local glitchSpeed = 80
+local shakeSensitivity = 5 -- Lower number = triggers even with a tiny shake
+
+-- Create ScreenGui
+local CoreGui = game:GetService("CoreGui")
+if CoreGui:FindFirstChild("ShakeSG_Gui") then
+    CoreGui.ShakeSG_Gui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ShakeSG_Gui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = CoreGui
+
+-- Create Draggable Square "SG shake" Button
+local sgButton = Instance.new("TextButton")
+sgButton.Name = "SGButton"
+sgButton.Size = UDim2.new(0, 65, 0, 65) -- Perfect square dimensions
+sgButton.Position = UDim2.new(0.8, 0, 0.4, 0)
+sgButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+sgButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+sgButton.Font = Enum.Font.GothamBold
+sgButton.TextSize = 13
+sgButton.Text = "SG shake"
+sgButton.Draggable = true
+sgButton.Active = true
+sgButton.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8) -- Soft square corners
+corner.Parent = sgButton
+
+-- Toggle ON/OFF
+sgButton.MouseButton1Click:Connect(function()
+    speedEnabled = not speedEnabled
+    if speedEnabled then
+        sgButton.BackgroundColor3 = Color3.fromRGB(0, 170, 90) -- Green when ON
+    else
+        sgButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Dark gray when OFF
+        sgButton.Rotation = 0
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = normalSpeed
+        end
+    end
+end)
+
+-- Track even the slightest camera movement / shake
+local lastCameraCFrame = workspace.CurrentCamera.CFrame
+
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("Humanoid") then return end
+    local humanoid = char.Humanoid
+
+    local currentCameraCFrame = workspace.CurrentCamera.CFrame
+    local deltaAngle = (currentCameraCFrame.LookVector - lastCameraCFrame.LookVector).Magnitude
+    lastCameraCFrame = currentCameraCFrame
+
+    if speedEnabled then
+        -- Button glitch animation when active
+        sgButton.BackgroundColor3 = Color3.fromRGB(math.random(0, 50), math.random(150, 255), math.random(100, 200))
+        sgButton.Rotation = math.random(-8, 8)
+
+        -- If you even slightly wiggle/shake your screen -> 80 Speed Glitch!
+        if deltaAngle > (shakeSensitivity * 0.001) then
+            humanoid.WalkSpeed = glitchSpeed
+        else
+            humanoid.WalkSpeed = normalSpeed
+        end
+    else
+        sgButton.Rotation = 0
+    end
+end)
+
+-- Reset speed on respawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    local humanoid = char:WaitForChild("Humanoid", 5)
+    if humanoid then
+        humanoid.WalkSpeed = speedEnabled and glitchSpeed or normalSpeed
+    end
+end)
